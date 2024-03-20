@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url'
 const exphbs = await import('express-handlebars')
 
 // *** Env validation ***
+import keys from './keys/index.js'
 import { config } from 'dotenv-safe'
 const env = config({
     allowEmptyValues: true,
@@ -42,7 +43,6 @@ import { router as routeAuth } from './routers/auth.js'
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const PORT = env.required.PORT || 3000
 
-const MONGODB_URI = 'mongodb://user:pass@localhost:7017'
 const app = express()
 app.use(
     cors({
@@ -54,7 +54,7 @@ app.disable('x-powered-by')
 
 const store = new MongoDBStore(
     {
-        uri: MONGODB_URI,
+        uri: keys.MONGODB_URI,
         // databaseName: 'connect_mongodb_session_test',
         collection: 'sessions',
     },
@@ -100,7 +100,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(
     session({
-        secret: 'some secret value',
+        secret: keys.SESSION_SERCET,
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
         },
@@ -164,7 +164,7 @@ async function start() {
         )
         mongoose.connection.on('close', () => console.log('close'))
 
-        await mongoose.connect(MONGODB_URI, {
+        await mongoose.connect(keys.MONGODB_URI, {
             authSource: 'admin',
             serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
         })

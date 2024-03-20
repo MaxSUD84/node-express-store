@@ -1,5 +1,19 @@
 import { Router } from 'express'
 import { User } from '../models/user.js'
+import nodemailer from 'nodemailer'
+import keys from '../keys/index.js'
+import registration from '../emails/registration.js'
+
+const transport = nodemailer.createTransport({
+    jsonTransport: true,
+})
+
+// const mail = {
+//     from: 'maxsud1984@yandex.ru',
+//     to: 'maksim.golodov@digitaltwin.ru',
+//     subject: 'Test Mail',
+//     text: "It's test message from Unisender",
+// }
 
 const bcrypt = await import('bcryptjs').then((bc) => bc.default)
 
@@ -61,6 +75,22 @@ router.post('/register', async (req, res) => {
                 cart: {},
             })
             await user.save()
+
+            // *** Nodemailer ***
+            // transport.sendMail(mail, (err, info) => {
+            //     console.log(info.envelope)
+            //     console.log(info.messageId)
+            //     console.log(info.message) // JSON string
+            // })
+            transport.sendMail(
+                registration(keys.EMAIL_FROM, 'maksim.golodov@digitaltwin.ru'),
+                (err, info) => {
+                    if (err) console.log(err)
+                    console.log(info.envelope)
+                    console.log(info.messageId)
+                    console.log(info.message)
+                }
+            )
         } else {
             req.flash(
                 'registerError',
