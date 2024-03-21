@@ -7,7 +7,6 @@ import { fileURLToPath } from 'url'
 const exphbs = await import('express-handlebars')
 
 // *** Env validation ***
-import keys from './keys/index.js'
 import { config } from 'dotenv-safe'
 const env = config({
     allowEmptyValues: true,
@@ -54,7 +53,7 @@ app.disable('x-powered-by')
 
 const store = new MongoDBStore(
     {
-        uri: keys.MONGODB_URI,
+        uri: env.required.MONGODB_URI,
         // databaseName: 'connect_mongodb_session_test',
         collection: 'sessions',
     },
@@ -100,7 +99,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use(
     session({
-        secret: keys.SESSION_SERCET,
+        secret: env.required.SESSION_SERCET,
         cookie: {
             maxAge: 1000 * 60 * 60 * 24 * 7, // 1 week
         },
@@ -164,7 +163,7 @@ async function start() {
         )
         mongoose.connection.on('close', () => console.log('close'))
 
-        await mongoose.connect(keys.MONGODB_URI, {
+        await mongoose.connect(env.required.MONGODB_URI, {
             authSource: 'admin',
             serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
         })

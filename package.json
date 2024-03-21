@@ -1,5 +1,5 @@
 {
-  "name": "express",
+  "name": "node-express-store",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -19,7 +19,6 @@
     "connect-mongodb-session-quickfix": "^5.0.0",
     "cookie-parser": "^1.4.6",
     "cors": "^2.8.5",
-    "csrf-csrf": "^3.0.3",
     "dotenv": "^16.3.2",
     "dotenv-safe": "^9.1.0",
     "express": "^4.18.2",
@@ -27,7 +26,6 @@
     "express-session": "^1.18.0",
     "helmet": "^7.1.0",
     "mongoose": "^8.1.1",
-    "nodemailer": "^6.9.13",
     "prettier": "^3.2.5",
     "uuid": "^9.0.1"
   },

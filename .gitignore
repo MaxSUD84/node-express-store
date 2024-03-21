@@ -27,5 +27,5 @@ lerna-debug.log*
 # docker container config
 # /docker/
 
-# .env
+.env
 .vscode

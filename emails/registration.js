@@ -4,9 +4,12 @@ export default function (toEmail, fromEmail) {
         from: fromEmail,
         subject: 'Аккаунт создан',
         // text: 'I hope this message gets buffered!',
-        html: `
+        // '<p>Вы успешно создали акаунт с email: ' + toEmail + '</p>',
+        body: `
             <h1>Добро пожаловать в магазин</h1>
-            <p>Вы успешно создали аакаунт с email - ${toEmail}</p>
+            <p>Вы успешно создали акаунт с email - ${toEmail}</p>
+            <hr />
+            <a href="http://localhost:3000/">Мой магазин</a>
         `,
     }
 }

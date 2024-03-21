@@ -1,21 +1,22 @@
 import { Router } from 'express'
+import crypto from 'node:crypto'
 import { User } from '../models/user.js'
-import nodemailer from 'nodemailer'
-import keys from '../keys/index.js'
+import { default as mailer } from '../emails/mailer-service.js'
 import registration from '../emails/registration.js'
+import reset from '../emails/reset.js'
 
-const transport = nodemailer.createTransport({
-    jsonTransport: true,
+// *** Env validation ***
+import { config } from 'dotenv-safe'
+import { cwd } from 'node:process'
+
+const env = config({
+    allowEmptyValues: true,
+    example: cwd() + '/.env.example',
 })
 
-// const mail = {
-//     from: 'maxsud1984@yandex.ru',
-//     to: 'maksim.golodov@digitaltwin.ru',
-//     subject: 'Test Mail',
-//     text: "It's test message from Unisender",
-// }
-
 const bcrypt = await import('bcryptjs').then((bc) => bc.default)
+
+// ********* CODE *********
 
 export const router = Router()
 
@@ -76,21 +77,24 @@ router.post('/register', async (req, res) => {
             })
             await user.save()
 
-            // *** Nodemailer ***
-            // transport.sendMail(mail, (err, info) => {
-            //     console.log(info.envelope)
-            //     console.log(info.messageId)
-            //     console.log(info.message) // JSON string
-            // })
-            transport.sendMail(
-                registration(keys.EMAIL_FROM, 'maksim.golodov@digitaltwin.ru'),
-                (err, info) => {
-                    if (err) console.log(err)
-                    console.log(info.envelope)
-                    console.log(info.messageId)
-                    console.log(info.message)
-                }
+            // *** Mailer middleware ***
+            const sMail = await mailer.sendEmail(
+                registration(env.required.EMAIL_TO, env.required.EMAIL_FROM)
             )
+
+            if (sMail?.errors) {
+                console.log(
+                    '=> SENDING MAIL ERROR: ',
+                    JSON.stringify(sMail.errors)
+                )
+            } else {
+                console.info(
+                    '=> MAIL SEND TO: ',
+                    sMail?.email,
+                    ' | email_Id: ',
+                    sMail?.id
+                )
+            }
         } else {
             req.flash(
                 'registerError',
@@ -99,6 +103,90 @@ router.post('/register', async (req, res) => {
             // throw new Error('Пользователь с таким email существует')
         }
         res.redirect('/auth/login#login')
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+router.get('/reset', (req, res) => {
+    res.render('auth/reset', {
+        title: 'Забыли пароль ?',
+        error: req.flash('error'),
+    })
+})
+
+router.post('/reset', async (req, res) => {
+    try {
+        crypto.randomBytes(32, async (err, buffer) => {
+            if (err) {
+                req.flash(
+                    'error',
+                    'Что-то пошло не так, повторите попытку позже'
+                )
+                return res.redirect('/auth/reset')
+            }
+
+            const token = buffer.toString('hex')
+            const candidate = await User.findOne({ email: req.body.email })
+
+            if (!candidate) {
+                req.flash('error', 'Такого email нет')
+                return res.redirect('/auth/reset')
+            }
+
+            candidate.resetToken = token
+            candidate.resetTokenExp = Date.now() + 60 * 60 * 1000
+            await candidate.save()
+
+            // *** Mailer middleware ***
+            const sMail = await mailer.sendEmail(
+                // reset(candidate.email, candidate.resetToken) - для production
+                reset(env.required.EMAIL_TO, token)
+            )
+
+            if (sMail?.errors) {
+                console.log(
+                    '## SENDING MAIL ERROR: ',
+                    JSON.stringify(sMail.errors)
+                )
+            } else {
+                console.info(
+                    '## RESET MAIL SEND TO: ',
+                    sMail?.email,
+                    ' | email_Id: ',
+                    sMail?.id
+                )
+            }
+
+            res.redirect('/auth/login')
+        })
+    } catch (error) {
+        console.log(error)
+    }
+})
+
+router.get('/password/:token', async (req, res) => {
+    if (!req.params.token) {
+        return res.redirect('/auth/login')
+    }
+
+    try {
+        const user = await User.findOne({
+            resetToken: req.params.token,
+            resetTokenExp: { $gt: Date.now() },
+        })
+
+        if (!user) {
+            req.flash('error', 'Истекло время жизни токена')
+            return res.redirect('/auth/login')
+        }
+
+        res.render('auth/password', {
+            title: 'Востановлить доступ',
+            error: req.flash('error'),
+            userId: user._id.toString(),
+            token: req.params.token,
+        })
     } catch (error) {
         console.log(error)
     }

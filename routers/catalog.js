@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { Course } from '../models/course.js'
 import { default as MW } from '../middleware/index.js'
+// import { default as mailer } from '../emails/mailer-service.js'
 
 export const router = Router()
 
@@ -8,6 +9,8 @@ router.get('/', async (req, res) => {
     const works = await Course.find({})
         .populate('userId', 'email name')
         .select('price title img')
+
+    // console.log(JSON.stringify(await mailer.check(33110613181)))
 
     res.render('catalog', {
         title: 'Каталог',
