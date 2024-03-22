@@ -17,7 +17,11 @@
                 <div class="card-action">
                   <a href="/catalog/{{id}}" target="_blank">Открыть работу</a>
                   {{#if @root.isAuth}}
+
+                  {{#ifeq userId._id @root.userId}}
                   <a href="/catalog/{{id}}/edit?allow=true">Редактировать</a>
+                  {{/ifeq}}
+
                     <form action="/card/add" method="post">
                       <input type="hidden" name="id" value="{{id}}">
                       <button type="submit" class="btn btn-primary">Купить</button>

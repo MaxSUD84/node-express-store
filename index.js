@@ -5,6 +5,8 @@ import mongoose from 'mongoose'
 import { default as MW } from './middleware/index.js'
 import { fileURLToPath } from 'url'
 const exphbs = await import('express-handlebars')
+// const hbs_helpers = await import('./utils/hbs-helpers.js')
+import { default as hbs_helpers } from './utils/hbs-helpers.js'
 
 // *** Env validation ***
 import { config } from 'dotenv-safe'
@@ -69,6 +71,7 @@ store.on('error', function (error) {
 const hbs = exphbs.create({
     defaultLayout: 'main',
     extname: 'hbs',
+    helpers: hbs_helpers,
     runtimeOptions: {
         allowProtoPropertiesByDefault: true,
         allowProtoMethodsByDefault: true,

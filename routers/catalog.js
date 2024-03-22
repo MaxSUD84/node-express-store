@@ -4,52 +4,85 @@ import { default as MW } from '../middleware/index.js'
 // import { default as mailer } from '../emails/mailer-service.js'
 
 export const router = Router()
+function isOwner(work, req) {
+    return work.userId.toString() === req.user._id.toString()
+}
 
 router.get('/', async (req, res) => {
-    const works = await Course.find({})
-        .populate('userId', 'email name')
-        .select('price title img')
+    try {
+        const works = await Course.find({})
+            .populate('userId', 'email name')
+            .select('price title img')
 
-    // console.log(JSON.stringify(await mailer.check(33110613181)))
-
-    res.render('catalog', {
-        title: 'Каталог',
-        isCatalog: true,
-        works: works,
-    })
+        res.render('catalog', {
+            title: 'Каталог',
+            isCatalog: true,
+            userId: req.user ? req.user._id.toString() : null,
+            works: works,
+        })
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 router.get('/:id', async (req, res) => {
-    const work = await Course.findById(req.params.id)
-    res.render('work', {
-        layout: 'empty',
-        title: `Работа: ${work.title}`,
-        work,
-    })
+    try {
+        const work = await Course.findById(req.params.id)
+        res.render('work', {
+            layout: 'empty',
+            title: `Работа: ${work.title}`,
+            work,
+        })
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 router.get('/:id/edit', MW.AuthCH, async (req, res) => {
     if (!req.query.allow) {
         return res.redirect('/')
     }
-    const work = await Course.findById(req.params.id)
-    res.render('work-edit', {
-        // layout: "main",
-        title: `Редактирование: ${work.title}`,
-        work,
-    })
+
+    try {
+        const work = await Course.findById(req.params.id)
+        if (!isOwner(work, req)) {
+            return res.redirect('/catalog')
+        }
+
+        res.render('work-edit', {
+            // layout: "main",
+            title: `Редактирование: ${work.title}`,
+            work,
+        })
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 router.post('/edit', MW.AuthCH, async (req, res) => {
-    const { id } = req.body
-    delete req.body.id
-    await Course.findByIdAndUpdate(id, { ...req.body, userId: req.user })
-    res.redirect('/catalog')
+    try {
+        const { id } = req.body
+        delete req.body.id
+        const work = await Course.findById(id)
+        if (!isOwner(work, req)) {
+            return res.redirect('/catalog')
+        }
+        Object.assign(work, req.body)
+        await work.save()
+        res.redirect('/catalog')
+    } catch (error) {
+        console.log(error)
+    }
 })
 
 router.post('/remove', MW.AuthCH, async (req, res) => {
-    const { id } = req.body
-    delete req.body.id
-    await Course.findByIdAndDelete(id)
-    res.redirect('/catalog')
+    try {
+        await Course.deleteOne({
+            _id: req.body.id,
+            userId: req.user._id,
+        })
+        res.redirect('/catalog')
+    } catch (error) {
+        console.log(error)
+    }
 })
