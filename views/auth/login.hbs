@@ -12,7 +12,7 @@
         {{/if}}
 
         <h1>Войти в магазин</h1>
-        <form action="/auth/login" method="post">
+        <form action="/auth/login" method="post" novalidate>
             <div class="input-field">
                 <input id="email" name="email" type="email" class="validate" required>
                 <label for="email">Логин (email)</label>
@@ -39,7 +39,7 @@
         {{/if}}
 
         <h1>Создать аккаунт</h1>
-        <form action="/auth/register" method="post">
+        <form action="/auth/register" method="post" novalidate>
             <div class="input-field">
                 <input id="remail" name="email" type="email" class="validate" required>
                 <label for="remail">Логин (email)</label>

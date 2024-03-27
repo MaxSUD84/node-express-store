@@ -4,6 +4,8 @@ import { User } from '../models/user.js'
 import { default as mailer } from '../emails/mailer-service.js'
 import registration from '../emails/registration.js'
 import reset from '../emails/reset.js'
+import { validationResult } from 'express-validator'
+import { registerValidators, loginValidators } from '../utils/validators.js'
 
 // *** Env validation ***
 import { config } from 'dotenv-safe'
@@ -29,9 +31,22 @@ router.get('/login', async (req, res) => {
     })
 })
 
-router.post('/login', async (req, res) => {
+router.post('/login', loginValidators, async (req, res) => {
     try {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
+            req.flash(
+                'loginError',
+                errors
+                    .array()
+                    .map((el, ind) => `[${ind + 1}]. ${el.msg}`)
+                    .join('\t')
+            )
+            return res.status(422).redirect('/auth/login#login')
+        }
+
         const { email, password } = req.body
+
         const candidate = await User.findOne({ email })
 
         if (candidate) {
@@ -60,48 +75,48 @@ router.post('/login', async (req, res) => {
     }
 })
 
-router.post('/register', async (req, res) => {
+router.post('/register', registerValidators, async (req, res) => {
     try {
-        const { email, password, repeat, name } = req.body
+        const { email, password, name } = req.body
 
-        const candidate = await User.findOne({ email })
-
-        if (!candidate) {
-            const hashPassword = await bcrypt.hash(password, 10)
-            const user = new User({
-                email,
-                password: hashPassword,
-                repeat,
-                name,
-                cart: {},
-            })
-            await user.save()
-
-            // *** Mailer middleware ***
-            const sMail = await mailer.sendEmail(
-                registration(env.required.EMAIL_TO, env.required.EMAIL_FROM)
-            )
-
-            if (sMail?.errors) {
-                console.log(
-                    '=> SENDING MAIL ERROR: ',
-                    JSON.stringify(sMail.errors)
-                )
-            } else {
-                console.info(
-                    '=> MAIL SEND TO: ',
-                    sMail?.email,
-                    ' | email_Id: ',
-                    sMail?.id
-                )
-            }
-        } else {
+        const errors = validationResult(req)
+        if (!errors.isEmpty()) {
             req.flash(
                 'registerError',
-                'Пользователь с таким #email уже существует'
+                errors
+                    .array()
+                    .map((el, ind) => `[${ind + 1}]. ${el.msg}`)
+                    .join('\t')
             )
-            // throw new Error('Пользователь с таким email существует')
+            return res.status(422).redirect('/auth/login#register')
         }
+
+        const hashPassword = await bcrypt.hash(password, 10)
+        const user = new User({
+            email,
+            password: hashPassword,
+            // confirm,
+            name,
+            cart: {},
+        })
+        await user.save()
+
+        // *** Mailer middleware ***
+        const sMail = await mailer.sendEmail(
+            registration(env.required.EMAIL_TO, env.required.EMAIL_FROM)
+        )
+
+        if (sMail?.errors) {
+            console.log('=> SENDING MAIL ERROR: ', JSON.stringify(sMail.errors))
+        } else {
+            console.info(
+                '=> MAIL SEND TO: ',
+                sMail?.email,
+                ' | email_Id: ',
+                sMail?.id
+            )
+        }
+
         res.redirect('/auth/login#login')
     } catch (error) {
         console.log(error)

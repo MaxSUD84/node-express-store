@@ -1,6 +1,8 @@
 import { Router } from 'express'
 import { Course } from '../models/course.js'
 import { default as MW } from '../middleware/index.js'
+import { workValidators } from '../utils/validators.js'
+import { validationResult } from 'express-validator'
 // import { default as mailer } from '../emails/mailer-service.js'
 
 export const router = Router()
@@ -59,9 +61,15 @@ router.get('/:id/edit', MW.AuthCH, async (req, res) => {
     }
 })
 
-router.post('/edit', MW.AuthCH, async (req, res) => {
+router.post('/edit', MW.AuthCH, workValidators, async (req, res) => {
     try {
+        const errors = validationResult(req)
         const { id } = req.body
+
+        if (!errors.isEmpty()) {
+            return res.status(422).redirect(`/catalog/${id}/edit?allow=true`)
+        }
+
         delete req.body.id
         const work = await Course.findById(id)
         if (!isOwner(work, req)) {
