@@ -3,6 +3,7 @@ import path from 'node:path'
 // import fs from "node:fs";
 import mongoose from 'mongoose'
 import { default as MW } from './middleware/index.js'
+import { err404 } from './middleware/error.js'
 import { fileURLToPath } from 'url'
 const exphbs = await import('express-handlebars')
 // const hbs_helpers = await import('./utils/hbs-helpers.js')
@@ -152,6 +153,8 @@ app.use('/add', routeAdd)
 app.use('/card', routeCard)
 app.use('/orders', routeOrders)
 app.use('/auth', routeAuth)
+
+app.use(err404)
 
 async function start() {
     try {
