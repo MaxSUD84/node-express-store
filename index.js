@@ -8,6 +8,7 @@ import { fileURLToPath } from 'url'
 const exphbs = await import('express-handlebars')
 // const hbs_helpers = await import('./utils/hbs-helpers.js')
 import { default as hbs_helpers } from './utils/hbs-helpers.js'
+import compression from 'compression'
 
 // *** Env validation ***
 import { config } from 'dotenv-safe'
@@ -38,6 +39,7 @@ import { router as routeAdd } from './routers/add.js'
 import { router as routeOrders } from './routers/orders.js'
 import { router as routeCard } from './routers/card.js'
 import { router as routeAuth } from './routers/auth.js'
+import { router as routeProfile } from './routers/profile.js'
 
 // *** Models ***
 // ***
@@ -99,6 +101,7 @@ app.set('partials', __dirname + '/views' + '/partials')
 
 /** Static */
 app.use('/public', express.static(__dirname + '/public'))
+app.use('/images', express.static(__dirname + '/images'))
 app.use(express.urlencoded({ extended: true }))
 
 app.use(
@@ -115,6 +118,8 @@ app.use(
 
 app.use(cookieParser(env.required.COOKIES_SECRET))
 
+app.use(MW.AuthMW)
+app.use(MW.UserFN)
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -125,6 +130,7 @@ app.use(
                     "'self'",
                     'https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js',
                 ],
+                scriptSrcAttr: 'none',
                 objectSrc: ["'none'"],
                 imgSrc: ["'self'", 'https://*'], //
                 styleSrc: ["'self'"],
@@ -134,6 +140,12 @@ app.use(
     })
 )
 
+// app.use(
+//     helmet({
+//         contentSecurityPolicy: false,
+//     })
+// )
+
 // *** Try to use csrf-csrf ***
 // app.get('/csrf-token', (req, res) => {
 //     const csrfToken = generateToken(req, res)
@@ -142,9 +154,8 @@ app.use(
 // })
 // app.use(doubleCsrfProtection)
 
-app.use(MW.AuthMW)
-app.use(MW.UserFN)
 app.use(flash())
+app.use(compression())
 
 /** Routes */
 app.use('/', routeHome)
@@ -153,6 +164,7 @@ app.use('/add', routeAdd)
 app.use('/card', routeCard)
 app.use('/orders', routeOrders)
 app.use('/auth', routeAuth)
+app.use('/profile', routeProfile)
 
 app.use(err404)
 
